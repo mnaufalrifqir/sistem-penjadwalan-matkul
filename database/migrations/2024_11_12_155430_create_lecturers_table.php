@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('lecturers', function (Blueprint $table) {
             $table->id();
-            $table->string('nip')->unique();
-            $table->string('code')->unique();
+            $table->string('nip');
+            $table->string('code');
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->timestamps();
             $table->softDeletes();

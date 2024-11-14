@@ -1,14 +1,11 @@
 <?php
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\CourseController;
-use App\Http\Controllers\StudentController;
-use App\Http\Controllers\LecturerController;
 use App\Http\Controllers\StudentScheduleController;
 use App\Http\Controllers\CourseScheduleController;
-use App\Http\Middleware\RoleMiddleware;
+use App\Http\Controllers\UserController;
 
 Route::group(['middleware' => 'api', 'prefix' => 'auth'], function ($router) {
     Route::post('login', [AuthController::class, 'login']);
@@ -19,7 +16,9 @@ Route::group(['middleware' => 'api', 'prefix' => 'auth'], function ($router) {
 });
 
 Route::apiResource('courses', CourseController::class);
-Route::apiResource('students', StudentController::class);
-Route::apiResource('lecturers', LecturerController::class);
-Route::apiResource('student-schedules', StudentScheduleController::class);
 Route::apiResource('course-schedules', CourseScheduleController::class);
+Route::apiResource('student-schedules', StudentScheduleController::class);
+Route::apiResource('users', UserController::class);
+
+Route::get('/students', [UserController::class, 'student']);
+Route::get('/lecturers', [UserController::class, 'getAllLecturers']);

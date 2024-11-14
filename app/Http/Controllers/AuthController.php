@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Validator;
+use Tymon\JWTAuth\Facades\JWTAuth;
 use Illuminate\Support\Facades\Hash;
 use App\Models\User;
 use Illuminate\Support\Facades\DB;
@@ -30,10 +31,10 @@ class AuthController extends Controller
     {
         $credentials = request(['email', 'password']);
 
-        if (! $token = auth()->attempt($credentials)) {
+        if (!$token = Auth::attempt($credentials)) {
             return response()->json([
                 'status' => 'Unauthorized',
-                'message' => 'Unauthorized',
+                'message' => 'Invalid credentials',
                 'error' => 'Unauthorized'
             ], 401);
         }
@@ -44,7 +45,7 @@ class AuthController extends Controller
             'data' => [
                 'access_token' => $token,
                 'token_type' => 'bearer',
-                'expires_in' => auth()->factory()->getTTL() * 60
+                'expires_in' => JWTAuth::factory()->getTTL() * 60
             ]
         ], 200);
     }
@@ -56,7 +57,7 @@ class AuthController extends Controller
      */
     public function register()
     {
-        $validator = Validator::make(request()->all(), [
+        $validatedData = Validator::make(request()->all(), [
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|unique:users|max:255',
             'password' => 'required|string|min:8',
@@ -68,11 +69,11 @@ class AuthController extends Controller
             'code' => 'required_if:role,lecturer|string|max:3|unique:lecturers,code',
         ]);
     
-        if ($validator->fails()) {
+        if ($validatedData->fails()) {
             return response()->json([
                 'status' => 'Bad Request',
                 'message' => 'The given data was invalid.',
-                'error' => $validator->errors()
+                'error' => $validatedData->errors()
             ], 400);
         }
     
@@ -101,7 +102,7 @@ class AuthController extends Controller
     
             DB::commit();
 
-            $token = auth()->attempt(['email' => request('email'), 'password' => request('password')]);
+            $token = auth('api')->attempt(['email' => request('email'), 'password' => request('password')]);
     
             return response()->json([
                 'status' => 'Created',
@@ -109,7 +110,7 @@ class AuthController extends Controller
                 'data' => [
                     'access_token' => $token,
                     'token_type' => 'bearer',
-                    'expires_in' => auth()->factory()->getTTL() * 60
+                    'expires_in' => JWTAuth::factory()->getTTL() * 60
                 ]
             ], 201);
             
@@ -133,7 +134,7 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'OK',
             'message' => 'User data successfully retrieved',
-            'data' => auth()->user()
+            'data' => auth('api')->user()
         ], 200);
     }
 
@@ -144,7 +145,7 @@ class AuthController extends Controller
      */
     public function logout()
     {
-        auth()->logout();
+        JWTAuth::invalidate(JWTAuth::getToken());
 
         return response()->json([
             'status' => 'OK',
@@ -162,21 +163,11 @@ class AuthController extends Controller
         return response()->json([
             'status' => 'OK',
             'message' => 'Token successfully refreshed',
-            'data' => $this->respondWithToken(auth()->refresh())
+            'data' => [
+                'access_token' => JWTAuth::parseToken()->refresh(),
+                'token_type' => 'bearer',
+                'expires_in' => JWTAuth::factory()->getTTL() * 60
+            ]
         ], 200);
-    }
-
-    /**
-     * Get the token array structure.
-     *
-     * @param  string $token
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    protected function respondWithToken($token)
-    {
-        return response()->json([
-            
-        ]);
     }
 }
