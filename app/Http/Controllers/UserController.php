@@ -8,11 +8,23 @@ use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+    
     /**
      * Display a listing of the resource.
      */
     public function index()
     {
+        if (auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+
         $users = User::with([
             'student',
             'lecturer'
@@ -30,6 +42,13 @@ class UserController extends Controller
      */
     public function show($id)
     {
+        if (auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $user = User::with([
             'student',
             'lecturer'
@@ -37,7 +56,7 @@ class UserController extends Controller
         
         if (!$user) {
             return response()->json([
-                'status' => 'NOT_FOUND',
+                'status' => 'Not Found',
                 'message' => 'User not found',
                 'data' => null
             ], 404);
@@ -58,7 +77,7 @@ class UserController extends Controller
         $user = User::find($id);
         if (!$user) {
             return response()->json([
-                'status' => 'NOT_FOUND',
+                'status' => 'Not Found',
                 'message' => 'User not found',
                 'data' => null
             ], 404);
@@ -78,10 +97,10 @@ class UserController extends Controller
 
         if ($validatedData->fails()) {
             return response()->json([
-                'status' => 'BAD_REQUEST',
+                'status' => 'Unprocessable Entity',
                 'message' => 'Invalid input',
                 'errors' => $validatedData->errors()
-            ], 400);
+            ], 422);
         }
         
         if (request('password')) {
@@ -92,7 +111,6 @@ class UserController extends Controller
             'name' => request('name', $user->name),
             'email' => request('email', $user->email),
             'password' => $user->password,
-            'role' => request('role', $user->role)
         ]);
 
         if ($user->role == 'student') {
@@ -122,10 +140,17 @@ class UserController extends Controller
      */
     public function destroy($id)
     {
+        if (auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $user = User::find($id);
         if (!$user) {
             return response()->json([
-                'status' => 'NOT_FOUND',
+                'status' => 'Not Found',
                 'message' => 'User not found',
                 'data' => null
             ], 404);
@@ -143,8 +168,15 @@ class UserController extends Controller
     /**
      * Get all users with student role and their data.
      */
-    public function student()
+    public function getAllStudent()
     {
+        if (auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $students = User::with([
             'student'
         ])->where('role', 'student')->paginate(10);
@@ -161,6 +193,13 @@ class UserController extends Controller
      */
     public function getAllLecturers()
     {
+        if (auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $lecturers = User::with([
             'lecturer'
         ])->where('role', 'lecturer')->paginate(10);

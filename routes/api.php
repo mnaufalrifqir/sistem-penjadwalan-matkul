@@ -6,6 +6,7 @@ use App\Http\Controllers\CourseController;
 use App\Http\Controllers\StudentScheduleController;
 use App\Http\Controllers\CourseScheduleController;
 use App\Http\Controllers\UserController;
+use App\Models\StudentSchedule;
 
 Route::group(['middleware' => 'api', 'prefix' => 'auth'], function ($router) {
     Route::post('login', [AuthController::class, 'login']);
@@ -20,5 +21,6 @@ Route::apiResource('course-schedules', CourseScheduleController::class);
 Route::apiResource('student-schedules', StudentScheduleController::class);
 Route::apiResource('users', UserController::class);
 
-Route::get('/students', [UserController::class, 'student']);
+Route::get('/students', [UserController::class, 'getAllStudents']);
 Route::get('/lecturers', [UserController::class, 'getAllLecturers']);
+Route::get('/course-schedules/{id}/students', [CourseScheduleController::class, 'getStudentsByCourseSchedule']);

@@ -8,23 +8,30 @@ use Illuminate\Validation\Rule;
 
 class StudentScheduleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+    
     /**
      * Display a listing of student schedules with related course schedule and student data.
      */
     public function index()
         {
-            // $studentId = auth('api')->user()->student->id;
-
-            // $studentSchedules = StudentSchedule::with(['courseSchedule', 'student'])
-            //     ->where('student_id', $studentId)
-            //     ->get();
+            if (auth('api')->user()->role !== 'student' && auth('api')->user()->role !== 'admin') {
+                return response()->json([
+                    'status' => 'Unauthorized',
+                    'message' => 'You are not authorized to access this resource',
+                ], 401);
+            }
 
             $studentSchedules = StudentSchedule::with([
                 'courseSchedule.course',
                 'courseSchedule.lecturer.user',
                 'student.user'
-            ])->get();
-
+            ])->where('student_id', auth('api')->user()->student->id)
+                ->paginate(10);
+            
             return response()->json([
                 'status' => 'OK',
                 'message' => 'Successfully retrieved all student schedules',
@@ -38,8 +45,14 @@ class StudentScheduleController extends Controller
      */
     public function store()
     {
+        if (auth('api')->user()->role !== 'student' && auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $validatedData = Validator::make(request()->all(), [
-            'student_id' => 'required|exists:students,id',
             'course_schedule_id' => [
                 'required',
                 Rule::exists('course_schedules', 'id')->whereNull('deleted_at')
@@ -48,13 +61,13 @@ class StudentScheduleController extends Controller
 
         if ($validatedData->fails()) {
             return response()->json([
-                'status' => 'Validation Error',
+                'status' => 'Unprocessable Entity',
                 'message' => $validatedData->errors()
-            ], 400);
+            ], 422);
         }
 
         $studentSchedule = StudentSchedule::create([
-            'student_id' => request('student_id'),
+            'student_id' => request('student_id', auth('api')->user()->student->id),
             'course_schedule_id' => request('course_schedule_id')
         ]);
 
@@ -70,6 +83,13 @@ class StudentScheduleController extends Controller
      */
     public function show($id)
     {
+        if (auth('api')->user()->role !== 'student' && auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $studentSchedule = StudentSchedule::with([
             'courseSchedule.course',
             'courseSchedule.lecturer.user',
@@ -81,6 +101,13 @@ class StudentScheduleController extends Controller
                 'status' => 'Not Found',
                 'message' => 'Student schedule not found'
             ], 404);
+        }
+
+        if (auth('api')->user()->role === 'student' && auth('api')->user()->student->id !== $studentSchedule->student_id) {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
         }
 
         return response()->json([
@@ -95,6 +122,13 @@ class StudentScheduleController extends Controller
      */
     public function update($id)
     {
+        if (auth('api')->user()->role !== 'student' && auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $studentSchedule = StudentSchedule::find($id);
 
         if (!$studentSchedule) {
@@ -102,6 +136,13 @@ class StudentScheduleController extends Controller
                 'status' => 'Not Found',
                 'message' => 'Student schedule not found'
             ], 404);
+        }
+
+        if (auth('api')->user()->role === 'student' && auth('api')->user()->student->id !== $studentSchedule->student_id) {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
         }
 
         $validatedData = Validator::make(request()->all(), [
@@ -114,9 +155,9 @@ class StudentScheduleController extends Controller
 
         if ($validatedData->fails()) {
             return response()->json([
-                'status' => 'Validation Error',
+                'status' => 'Unprocessable Entity',
                 'message' => $validatedData->errors()
-            ], 400);
+            ], 422);
         }
 
         $studentSchedule->update([
@@ -136,6 +177,13 @@ class StudentScheduleController extends Controller
      */
     public function destroy($id)
     {
+        if (auth('api')->user()->role !== 'student' && auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+
         $studentSchedule = StudentSchedule::find($id);
 
         if (!$studentSchedule) {
@@ -143,6 +191,13 @@ class StudentScheduleController extends Controller
                 'status' => 'Not Found',
                 'message' => 'Student schedule not found'
             ], 404);
+        }
+
+        if (auth('api')->user()->role === 'student' && auth('api')->user()->student->id !== $studentSchedule->student_id) {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
         }
 
         $studentSchedule->delete();

@@ -3,17 +3,22 @@
 namespace App\Http\Controllers;
 
 use App\Models\CourseSchedule;
+use App\Models\StudentSchedule;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Validation\Rule;
 
 class CourseScheduleController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+    
     /**
      * Display a listing of the course schedules with related course and lecturer data.
      */
     public function index()
     {
-
         $courseSchedules = CourseSchedule::with(['course', 'lecturer.user'])
             ->paginate(10);
 
@@ -29,6 +34,13 @@ class CourseScheduleController extends Controller
      */
     public function store()
     {
+        if (auth('api')->user()->role !== 'lecturer' && auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+
         $validatedData = Validator::make(request()->all(), [
             'room' => 'required|string|max:255',
             'day' => 'required|string',
@@ -38,23 +50,22 @@ class CourseScheduleController extends Controller
                 'required',
                 Rule::exists('courses', 'id')->whereNull('deleted_at')
             ],
-            'lecturer_id' => 'required|exists:lecturers,id',
         ]);
 
         if ($validatedData->fails()) {
             return response()->json([
-                'status' => 'Validation Error',
+                'status' => 'Unprocessable Entity',
                 'message' => $validatedData->errors()
-            ], 400);
+            ], 422);
         }
-
+        
         $courseSchedule = CourseSchedule::create([
             'room' => request('room'),
             'day' => request('day'),
             'start_time' => request('start_time'),
             'end_time' => request('end_time'),
             'course_id' => request('course_id'),
-            'lecturer_id' => request('lecturer_id')
+            'lecturer_id' => request('lecturer_id', auth('api')->user()->lecturer->id)
         ]);
 
         return response()->json([
@@ -91,6 +102,13 @@ class CourseScheduleController extends Controller
      */
     public function update($id)
     {
+        if (auth('api')->user()->role !== 'lecturer' && auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $courseSchedule = CourseSchedule::find($id);
 
         if (!$courseSchedule) {
@@ -98,6 +116,13 @@ class CourseScheduleController extends Controller
                 'status' => 'Not Found',
                 'message' => 'Course schedule not found'
             ], 404);
+        }
+
+        if (auth('api')->user()->role === 'lecturer' && auth('api')->user()->lecturer->id !== $courseSchedule->lecturer_id) {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
         }
 
         $validatedData = Validator::make(request()->all(), [
@@ -109,14 +134,14 @@ class CourseScheduleController extends Controller
                 'sometimes',
                 Rule::exists('courses', 'id')->whereNull('deleted_at')
             ],
-            'lecturer_id' => 'sometimes|exists:lecturers,id',
+            'lecturer_id' => 'sometimes|exists:lecturers,id'
         ]);
 
         if ($validatedData->fails()) {
             return response()->json([
-                'status' => 'Validation Error',
+                'status' => 'Unprocessable Entity',
                 'message' => $validatedData->errors()
-            ], 400);
+            ], 422);
         }
 
         $courseSchedule->update([
@@ -140,6 +165,13 @@ class CourseScheduleController extends Controller
      */
     public function destroy($id)
     {
+        if (auth('api')->user()->role !== 'lecturer' && auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $courseSchedule = CourseSchedule::find($id);
 
         if (!$courseSchedule) {
@@ -149,11 +181,41 @@ class CourseScheduleController extends Controller
             ], 404);
         }
 
+        if (auth('api')->user()->role === 'lecturer' && auth('api')->user()->lecturer->id !== $courseSchedule->lecturer_id) {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+
         $courseSchedule->delete();
 
         return response()->json([
             'status' => 'OK',
             'message' => 'Successfully deleted course schedule'
+        ], 200);
+    }
+
+    public function getStudentsByCourseSchedule($id)
+    {
+        $courseSchedule = CourseSchedule::find($id);
+
+        if (!$courseSchedule) {
+            return response()->json([
+                'status' => 'Not Found',
+                'message' => 'Course schedule not found'
+            ], 404);
+        }
+
+        $students = StudentSchedule::with([
+            'student.user'
+        ])->where('course_schedule_id', $id)
+            ->paginate(10);
+
+        return response()->json([
+            'status' => 'OK',
+            'message' => 'Successfully retrieved all students by course schedule',
+            'data' => $students
         ], 200);
     }
 }

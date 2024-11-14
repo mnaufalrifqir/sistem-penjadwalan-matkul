@@ -8,6 +8,11 @@ use Illuminate\Validation\Rule;
 
 class CourseController extends Controller
 {
+    public function __construct()
+    {
+        $this->middleware('auth:api');
+    }
+    
     /**
      * Display a listing of the resource.
      */
@@ -27,6 +32,13 @@ class CourseController extends Controller
      */
     public function store()
     {
+        if (auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $validatedData = Validator::make(request()->all(), [
             'name' => 'required|string|max:255',
             'code' => [
@@ -40,10 +52,10 @@ class CourseController extends Controller
 
         if ($validatedData->fails()) {
             return response()->json([
-                'status' => 'Bad Request',
+                'status' => 'Unprocessable Entity',
                 'message' => 'Invalid input',
                 'errors' => $validatedData->errors()
-            ], 400);
+            ], 422);
         }
 
         $course = Course::create([
@@ -85,6 +97,13 @@ class CourseController extends Controller
      */
     public function update($id)
     {
+        if (auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $course = Course::find($id);
 
         if (!$course) {
@@ -107,10 +126,10 @@ class CourseController extends Controller
 
         if ($validatedData->fails()) {
             return response()->json([
-                'status' => 'Bad Request',
+                'status' => 'Unprocessable Entity',
                 'message' => 'Invalid input',
                 'errors' => $validatedData->errors()
-            ], 400);
+            ], 422);
         }
 
         $course->update([
@@ -131,6 +150,13 @@ class CourseController extends Controller
      */
     public function destroy($id)
     {
+        if (auth('api')->user()->role !== 'admin') {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
+        }
+        
         $course = Course::find($id);
 
         if (!$course) {

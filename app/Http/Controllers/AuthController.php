@@ -35,7 +35,6 @@ class AuthController extends Controller
             return response()->json([
                 'status' => 'Unauthorized',
                 'message' => 'Invalid credentials',
-                'error' => 'Unauthorized'
             ], 401);
         }
 
@@ -71,10 +70,10 @@ class AuthController extends Controller
     
         if ($validatedData->fails()) {
             return response()->json([
-                'status' => 'Bad Request',
+                'status' => 'Unprocessable Entity',
                 'message' => 'The given data was invalid.',
                 'error' => $validatedData->errors()
-            ], 400);
+            ], 422);
         }
     
         DB::beginTransaction();
