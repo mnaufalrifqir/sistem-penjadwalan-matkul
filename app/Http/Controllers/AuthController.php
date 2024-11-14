@@ -151,22 +151,4 @@ class AuthController extends Controller
             'message' => 'Successfully logged out'
         ], 200);
     }
-
-    /**
-     * Refresh a token.
-     *
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function refresh()
-    {
-        return response()->json([
-            'status' => 'OK',
-            'message' => 'Token successfully refreshed',
-            'data' => [
-                'access_token' => JWTAuth::parseToken()->refresh(),
-                'token_type' => 'bearer',
-                'expires_in' => JWTAuth::factory()->getTTL() * 60
-            ]
-        ], 200);
-    }
 }

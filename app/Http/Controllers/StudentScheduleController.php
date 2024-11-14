@@ -28,7 +28,6 @@ class StudentScheduleController extends Controller
             $studentSchedules = StudentSchedule::with([
                 'courseSchedule.course',
                 'courseSchedule.lecturer.user',
-                'student.user'
             ])->where('student_id', auth('api')->user()->student->id)
                 ->paginate(10);
             
@@ -158,6 +157,13 @@ class StudentScheduleController extends Controller
                 'status' => 'Unprocessable Entity',
                 'message' => $validatedData->errors()
             ], 422);
+        }
+
+        if (request('student_id') && (auth('api')->user()->role === 'student' && auth('api')->user()->student->id !== request('student_id'))) {
+            return response()->json([
+                'status' => 'Unauthorized',
+                'message' => 'You are not authorized to access this resource',
+            ], 401);
         }
 
         $studentSchedule->update([

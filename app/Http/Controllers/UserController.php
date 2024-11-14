@@ -87,7 +87,6 @@ class UserController extends Controller
             'name' => 'sometimes|string|max:255',
             'email' => 'sometimes|string|email|unique:users|max:255',
             'password' => 'sometimes|string|min:8',
-            'role' => 'sometimes|string|in:lecturer,student',
             'nim' => 'sometimes|string|unique:students,nim|max:10',
             'major' => 'sometimes|string|max:255',
             'class_year' => 'sometimes|string|max:4',
@@ -161,14 +160,13 @@ class UserController extends Controller
         return response()->json([
             'status' => 'OK',
             'message' => 'Successfully deleted user',
-            'data' => null
         ], 200);
     }
 
     /**
      * Get all users with student role and their data.
      */
-    public function getAllStudent()
+    public function getAllStudents()
     {
         if (auth('api')->user()->role !== 'admin') {
             return response()->json([
